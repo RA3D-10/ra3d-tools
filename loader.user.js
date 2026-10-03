@@ -7,7 +7,7 @@
 // @match        *://discord.com/*
 // @run-at       document-end
 // @grant        none
-// @require      https://cdn.jsdelivr.net/gh/RA3D-10/ra3d-tools@main/script.js
+// @require      https://cdn.jsdelivr.net/gh/RA3D-10/ra3d-tools@main/script.js?v=4
 // ==/UserScript==
 
 (function () {
