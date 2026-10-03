@@ -7,8 +7,9 @@
 // @match        *://discord.com/*
 // @run-at       document-end
 // @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
 // @connect      discord.com
-// @require      https://cdn.jsdelivr.net/gh/RA3D-10/ra3d-tools@b86984c/script.js
+// @require      https://cdn.jsdelivr.net/gh/RA3D-10/ra3d-tools@PUT_HASH_HERE/script.js
 // ==/UserScript==
 
 (function() {
