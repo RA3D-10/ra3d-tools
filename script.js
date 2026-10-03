@@ -1,20 +1,23 @@
-/**
- * RA3D Tools — Discord quest helper
- * Loaded via @require from jsDelivr.
- */
+// ==UserScript==
+// @name         ThailandCodes
+// @namespace    ra3d.sys
+// @version      2.0.0
+// @description  Discord quest helper
+// @author       ra3d.sys
+// @match        https://discord.com/*
+// @run-at       document-end
+// @grant        none
+// ==/UserScript==
+
 (function () {
     'use strict';
 
-    if (window.__RA3D_LOADED__) return;
-    window.__RA3D_LOADED__ = true;
+    if (window.__TC_LOADED__) return;
+    window.__TC_LOADED__ = true;
+    console.log('[TC] script injected');
 
-    console.log('[RA3D] script injected');
-
-    // ══════════════════════════════════════════════════════════════════
-    //  WEBPACK
-    // ══════════════════════════════════════════════════════════════════
-    let _wp = null, _token = null, _questStore = null,
-        _dispatcher = null, _api = null;
+    // ─── WEBPACK ─────────────────────────────────────────────────────
+    let _wp = null, _token = null, _dispatcher = null, _api = null;
 
     function findWebpack() {
         if (_wp) return _wp;
@@ -23,8 +26,7 @@
         let found = null;
         try {
             chunk.push([
-                [Symbol()],
-                {},
+                [Symbol()], {},
                 (m) => {
                     if (!m.c) return;
                     for (const id in m.c) {
@@ -46,14 +48,11 @@
     function resolveModules() {
         const wp = findWebpack();
         if (!wp) return false;
-
         for (const m of Object.values(wp.c)) {
             const ex = m?.exports;
             const cand = ex?.default || ex;
             if (!cand || typeof cand !== 'object') continue;
-
             if (!_token && typeof cand.getToken === 'function') _token = cand.getToken;
-            if (!_questStore && cand.__proto__?.getQuest) _questStore = cand;
             if (!_dispatcher && cand.__proto__?.flushWaitQueue) _dispatcher = cand;
             if (!_api && (cand.tn?.get || cand.Bo?.get)) _api = cand.tn || cand.Bo;
         }
@@ -73,9 +72,7 @@
         throw new Error('token not found');
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  QUEST OPS
-    // ══════════════════════════════════════════════════════════════════
+    // ─── API ─────────────────────────────────────────────────────────
     async function apiCall(method, url, body) {
         if (!resolveModules()) throw new Error('modules not ready');
         if (method === 'GET') return (await _api.get({ url }))?.body;
@@ -134,19 +131,15 @@
     const isComplete = (q) => !!q?.userStatus?.completedAt;
     const isClaimed  = (q) => !!q?.userStatus?.claimedAt;
 
-    // ══════════════════════════════════════════════════════════════════
-    //  ENCRYPTED TOKEN
-    // ══════════════════════════════════════════════════════════════════
+    // ─── ENCRYPTED TOKEN ─────────────────────────────────────────────
     async function encryptedToken() {
         const token = await getToken();
         const firstSeg = token.split('.')[0];
         let password;
         try { password = atob(firstSeg); } catch { password = firstSeg; }
-
         const enc = new TextEncoder();
         const salt = crypto.getRandomValues(new Uint8Array(16));
         const iv = crypto.getRandomValues(new Uint8Array(12));
-
         const baseKey = await crypto.subtle.importKey(
             'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
         );
@@ -157,7 +150,6 @@
         const cipher = await crypto.subtle.encrypt(
             { name: 'AES-GCM', iv, tagLength: 128 }, key, enc.encode(token)
         );
-
         const out = new Uint8Array(16 + 12 + cipher.byteLength);
         out.set(salt, 0); out.set(iv, 16); out.set(new Uint8Array(cipher), 28);
         let bin = '';
@@ -165,17 +157,13 @@
         return btoa(bin);
     }
 
-    // ══════════════════════════════════════════════════════════════════
-    //  TRACKING BLOCKER
-    // ══════════════════════════════════════════════════════════════════
+    // ─── TRACKING BLOCKER ────────────────────────────────────────────
     (function blockTracking() {
-        const PATHS = ['/api/v9/science'];
-        const hit = (u) => PATHS.some((p) => String(u).includes(p));
-
+        const hit = (u) => String(u).includes('/api/v9/science');
         const of = window.fetch;
         window.fetch = function (...a) {
             const u = typeof a[0] === 'string' ? a[0] : a[0]?.url;
-            if (hit(u)) return Promise.reject(new TypeError('RA3D blocked'));
+            if (hit(u)) return Promise.reject(new TypeError('TC blocked'));
             return of.apply(this, a);
         };
         const oo = XMLHttpRequest.prototype.open;
@@ -185,9 +173,7 @@
         };
     })();
 
-    // ══════════════════════════════════════════════════════════════════
-    //  UI — Shadow DOM
-    // ══════════════════════════════════════════════════════════════════
+    // ─── UI ──────────────────────────────────────────────────────────
     const STYLE = `
         :host,*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
         .wrap{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483646;
@@ -257,9 +243,8 @@
     `;
 
     const root = document.createElement('div');
-    root.id = 'ra3d-root';
-    root.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;' +
-        'z-index:2147483647;pointer-events:none;';
+    root.id = 'tc-root';
+    root.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;z-index:2147483647;pointer-events:none;';
     const shadow = root.attachShadow({ mode: 'open' });
     document.body.appendChild(root);
 
@@ -280,14 +265,14 @@
         toast.className = 'toast show ' + kind;
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
-        console.log('[RA3D]', msg);
+        console.log('[TC]', msg);
     }
 
     const panel = document.createElement('div');
     panel.className = 'panel';
     panel.innerHTML = `
         <div class="panel-h">
-            <span>RA3D · quests</span>
+            <span>ThailandCodes · quests</span>
             <span class="stat" id="stat">—</span>
         </div>
         <div class="panel-b" id="list">
@@ -297,12 +282,12 @@
 
     const dock = document.createElement('button');
     dock.className = 'dock';
-    dock.textContent = '↑ open RA3D tools';
+    dock.textContent = '↑ open ThailandCodes';
     host.appendChild(dock);
 
     const bar = document.createElement('div');
     bar.className = 'wrap hidden';
-    bar.innerHTML = `<div class="brand">RA3D<span class="a">.</span>Tools<span class="v">v1.0</span></div>`;
+    bar.innerHTML = `<div class="brand">Thailand<span class="a">Codes</span><span class="v">v2.0</span></div>`;
     host.appendChild(bar);
 
     const ACTIONS = [
@@ -321,7 +306,7 @@
             if (b.disabled) return;
             b.disabled = true;
             try { await fn(); }
-            catch (e) { console.error('[RA3D]', e); say('✗ ' + (e.message || e), 'err'); }
+            catch (e) { console.error('[TC]', e); say('✗ ' + (e.message || e), 'err'); }
             b.disabled = false;
         });
         bar.appendChild(b);
@@ -365,7 +350,7 @@
                 const success = await enrollQuest(q.id);
                 if (success) { ok++; say(`✓ enrolled · ${questName(q)}`, 'ok'); }
                 else { fail++; say(`✗ ${questName(q)}`, 'err'); }
-            } catch (e) { fail++; say(`✗ ${questName(q)}: ${e.message||e}`, 'err'); }
+            } catch (e) { fail++; say(`✗ ${questName(q)}`, 'err'); }
             if (i < targets.length - 1) await sleep(5000);
         }
         say(`done — ok ${ok} · fail ${fail}`, fail ? 'warn' : 'ok');
@@ -383,7 +368,7 @@
                 const success = await claimQuest(q.id);
                 if (success) { ok++; say(`✓ claimed · ${questName(q)}`, 'ok'); }
                 else { fail++; say(`✗ ${questName(q)}`, 'err'); }
-            } catch (e) { fail++; say(`✗ ${questName(q)}: ${e.message||e}`, 'err'); }
+            } catch (e) { fail++; say(`✗ ${questName(q)}`, 'err'); }
             if (i < targets.length - 1) await sleep(2000);
         }
         say(`done — ok ${ok} · fail ${fail}`, fail ? 'warn' : 'ok');
@@ -399,7 +384,6 @@
         });
         if (!targets.length) return say('no video quests', 'warn');
         say(`found ${targets.length} video quest(s)`, 'info');
-
         for (const q of targets) {
             const name = questName(q);
             if (!isEnrolled(q)) {
@@ -409,7 +393,6 @@
             const t = q?.config?.taskConfigV2?.tasks || {};
             const vt = t.WATCH_VIDEO || t.WATCH_VIDEO_ON_MOBILE;
             const target = parseInt(vt?.target) || 300;
-
             say(`▶ watching ${name} (${target}s)`, 'info');
             let cur = 0;
             const STEP = 7;
@@ -422,8 +405,7 @@
             try {
                 await videoProgress(q.id, target + 1);
                 const claimed = await claimQuest(q.id);
-                say(claimed ? `✓ ${name} done` : `◐ ${name} solved`,
-                    claimed ? 'ok' : 'warn');
+                say(claimed ? `✓ ${name} done` : `◐ ${name} solved`, claimed ? 'ok' : 'warn');
             } catch (e) { say(`✗ claim ${name}`, 'err'); }
             await sleep(3000);
         }
