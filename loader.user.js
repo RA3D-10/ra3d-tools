@@ -1,16 +1,17 @@
 // ==UserScript==
-// @name         RA3D Tools Loader
-// @namespace    ra3d.sys
-// @version      1.0.0
-// @description  Loads RA3D Tools via @require
-// @author       ra3d.sys
+// @name         ThailandCodes Loader
+// @namespace    thailandcodes.sys
+// @version      3.0.0
+// @description  Loads ThailandCodes via @require
+// @author       thailandcodes
 // @match        *://discord.com/*
 // @run-at       document-end
-// @grant        none
-// @require      https://cdn.jsdelivr.net/gh/RA3D-10/ra3d-tools@main/script.js?v=4
+// @grant        GM_xmlhttpRequest
+// @connect      discord.com
+// @require      https://cdn.jsdelivr.net/gh/RA3D-10/ra3d-tools@b86984c/script.js
 // ==/UserScript==
 
-(function () {
+(function() {
     'use strict';
-    console.log('RA3D Tools loaded via @require!');
+    console.log('[TC] ThailandCodes loader active');
 })();
