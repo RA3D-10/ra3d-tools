@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         ThailandCodes
-// @namespace    ra3d.sys
+// @namespace    thailandcodes.sys
 // @version      3.0.0
 // @description  Discord quest helper
-// @author       ra3d.sys
+// @author       thailandcodes
 // @match        *://discord.com/*
 // @run-at       document-end
 // @grant        GM_xmlhttpRequest
